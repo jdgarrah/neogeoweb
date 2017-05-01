@@ -1,0 +1,605 @@
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+    <!-- Mapbox-->
+
+  	<script src='https://api.mapbox.com/mapbox.js/v3.0.1/mapbox.js'></script>
+
+  	<!-- MpBx directions -->
+
+  	<script src='https://api.mapbox.com/mapbox.js/plugins/mapbox-directions.js/v0.4.0/mapbox.directions.js'></script>
+
+	<!--JQuery-->
+
+  	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+
+	<!--Style-->
+
+  	<link href='https://api.mapbox.com/mapbox.js/v3.0.1/mapbox.css' rel='stylesheet' />
+
+  	<link rel="stylesheet" href="https://www.w3schools.com/w3css/3/w3.css">
+
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css">
+
+	<style> <!-- CSS Styles -->
+
+		body {
+
+			margin: 0;
+
+			padding:0;
+
+		}
+
+		#map {
+
+			height:100%;
+
+			width:100%;
+
+		}
+
+		#m-booked-bl-simple-80214 {
+
+			float: left;
+
+		}
+
+		#directions {
+	    position: relative;
+	    width: 100%;
+	    z-index: 99;
+	    background: rgba(0,0,0,.8);
+	    color: white;
+	    top: 0;
+	    right: 0;
+	    bottom: 0;
+	    overflow: auto;
+		}
+
+
+	</style>
+
+</head>
+
+
+
+<body>
+
+	<!--/sections and articles -->
+
+	<section class="w3-container w3-center" style="max-with:600px"> <!-- header -->
+
+	  <h2 class="w3-wide">Boston Area Transit Tracker</h2>
+
+	   <i class="fa fa-bus" style="font-size:50px;"></i>
+
+	  <p class="w3-opacity"><i>Find your nearest transit stop in REAL TIME.</i></p>
+
+	</section>
+	
+
+
+	<section class="w3-container w3-content w3-center" style="max-with:600px"> <!-- site info and embedded weather widget -->
+	
+	<p class="w3-justify">
+
+	<p class="serif">
+
+	Click on a point on the map to indicate your location. We will tell you where the nearest bus stop is, how long it takes to walk there, and when the next bus is scheduled to arrive.</p>
+
+	</section>
+
+	<div id='directions'> <!-- creates a div where walking directions will eventually live once written by MpBx Directions API -->
+  	  <div id='instructions'></div>
+	</div>
+
+	<div id="map" class="map"></div> <!-- the all important Map Div -->
+
+	
+
+
+
+	<!-- Footer -->
+	<footer class="w3-container w3-padding-64 w3-center w3-blue w3-large">
+
+	  <a href="#"><i class="fa fa-facebook-official"></i></a>
+
+	  <i class="fa fa-bus"></i>
+
+
+
+	  <p class="w3-medium">
+
+	    Powered by <a href="https://www.w3schools.com/w3css/default.asp" target="_blank">w3.css</a>
+
+	  </p>
+
+	</footer>
+
+
+<!-- BEGIN JS CODE -->
+	<script type="text/javascript">
+
+		var usr = []; //initalization
+		// create a variable to store the start point of the walking path 
+		var start; 
+		//create a variable for the end point of the walking path
+		var end; 
+		var distance; 
+
+		//Constructor for the Stop Class
+		function busStop (info) {
+
+			this.id = info[0],
+
+			this.name = info[1],
+
+			this.lat = info[2],
+
+			this.lng = info[3],
+
+			//green marker for closest stop 
+
+			this.marker = function() {
+
+				var marker = L.marker([this.lat,this.lng], {
+
+					icon: L.mapbox.marker.icon({
+
+						'marker-size': 'small',
+
+						'marker-symbol': 'bus',
+
+						'marker-color': '#008000'
+
+					})
+
+				}).addTo(locations);
+
+				return marker;
+
+			}
+
+			//red marker for closest stop 
+
+			this.marker2 = function() {
+
+				var marker = L.marker([this.lat,this.lng], {
+
+					icon: L.mapbox.marker.icon({
+
+						'marker-size': 'small',
+
+						'marker-symbol': 'bus',
+
+						'marker-color': '#388E8E'
+
+					})
+
+				}).addTo(locations);
+
+				return marker;
+
+			}
+
+
+
+			//make marker invisible for the marker attached to the real time feed 
+
+			this.marker3 = function() {
+
+				//custom marker with blank image
+
+				var noIcon = L.icon({
+
+				    iconUrl: 'http://neogeoweb.ca/384group1/blank.png',
+
+				    iconSize: [90, 90], // size of the icon
+				});
+
+				var marker = L.marker([this.lat,this.lng], {icon: noIcon}).addTo(locations);
+				return marker;
+
+			}
+
+			
+
+		
+
+			
+
+			this.getWalkReq = function(ln, lt) { //a method that creates a URL request to mpbx directions API and returns it, ready for AJAX
+
+				//CREATE REQUEST TO DIRECTIONS API
+				console.log("hello! from the walking fcn", usr);
+
+				var reqHead = "https://api.mapbox.com/directions/v5/mapbox/walking/";
+
+				var reqCoords = this.lng + "%2C" + this.lat + "%3B" + ln + "%2C" + lt;
+
+				var reqTail = ".json?access_token=pk.eyJ1IjoiamRnYXJyYWgiLCJhIjoiY2owaDVwcnNtMDB2djJ3dWpob2pyZnA3ZyJ9.NV2uh3r2yqnmyIfxfDXZJw";
+
+				var req = reqHead + reqCoords + reqTail;
+				return req;
+
+			}
+
+			this.getNextBus = function(lat, lng) { //a method that does the bulk of the work in the app, finding the next bus at the stop that can be reached by walking
+
+				var nbHead = "http://realtime.mbta.com/developer/api/v2/predictionsbystop?"; //creates url request to send to boston transit API
+
+		        var apiKey = "api_key=UYy9EUGU7Uq1ZOk3PDi8VA&stop=";
+
+		        var nbTail = "&format=json";
+
+		        var nextBusRequest = nbHead + apiKey + this.id + nbTail;
+
+		        var busArray = []; //initializations
+
+		        var nextBus;
+
+		        var $this = this; //statement to access methods/properties of the class from within AJAX callback functions
+
+		        var resp = $.get(nextBusRequest, function(result) { //call to boston transit API to get bus predictions by stop
+
+		        	if (typeof result.mode == 'undefined') { //checks for undefined errors (no busses scheduled) and calls error method
+
+		        		console.log("in if");
+
+		        		$this.error();
+
+		        	}
+
+		          for (var i=0; i<result.mode.length; i++) { //4 (four) nested for loops to access predicted departure time for each incoming bus at the stop
+
+		            for (var j=0; j<result.mode[i].route.length; j++) {
+
+		          for (var k=0; k<result.mode[i].route[j].direction.length; k++) {
+
+		            for (var l=0; l<result.mode[i].route[j].direction[0].trip.length; l++) {
+
+		              busArray.push([result.mode[i].route[j].route_id, result.mode[i].route[j].direction[0].trip[l].pre_dt]); //it was buried deep. adds to an array of busses incoming
+
+		            }
+
+		            }
+
+		          }
+
+
+
+		        }
+
+		        console.log(busArray); //development testing 
+
+		        var now = new Date().getTime()/1000; //creates current time stamp in epoch time (seconds)
+
+		        console.log(now); //dev test
+
+		        busArray.sort(function(a, b) { //sorts incoming bus array (2D sort) from nearest time to furthest
+
+				    var avalue = a[1],
+
+				        bvalue = b[1];
+
+				    if (avalue < bvalue) {
+
+				        return -1;
+
+				    }
+
+				    if (avalue > bvalue) {
+
+				        return 1;
+
+				    }
+
+				    return 0;
+
+				});
+
+		        console.log(busArray); //dev test
+
+		    
+				var walkReq = $this.getWalkReq(lat,lng); //calls to class' method to create walking network request url 
+				var directions = $.getJSON(walkReq, function(result) { //AJAX to mpbx directions API
+
+					networkDistance = result.routes[0].distance; //THIS is the network distance
+
+					console.log("network distance is: ", networkDistance); //dev test
+					walkTime = networkDistance/100; //creates walking time by dividing network distance by average walking time
+					console.log("the walking time: ", walkTime); //dev test
+					for (var i=0; i<busArray.length; i++) { //begin to look through the bus array
+
+						if (busArray[i][1] > (now + walkTime*60)) { //checks if bus can be reached in walking time from user's location
+
+							nextBus = busArray[i] //if so, populates a variable with the next bus 
+
+							console.log("next bus: ", nextBus); //dev test
+
+							break //breaks loop
+
+						} else { //continues to loop thru array until the next reachable bus is found
+
+							console.log("else");
+
+						}
+
+		        }
+
+					//point to bind pop up 
+
+					var marker = $this.marker3(); //creates invisible marker that popup can be bound to
+
+					var diff = Math.round((nextBus[1] - now)/60); //calculates difference between bus arrival and current time in minues
+
+					var wait = Math.round(diff - walkTime); //calculates how long user will have to wait once at the stop in minutes
+
+
+
+					//creates popup on the stop with HTML formatted information (route, time to bus, wait time, walk time)
+					marker.bindPopup("<b>NEXT BUS YOU CAN CATCH : </b> Route " + nextBus[0] +  " in </b>" + diff + " mins </br>" + "<b>YOU'LL HAVE TO WAIT: </b>" + wait + " mins" + "<br> (walk time: " + Math.round(walkTime) +")");
+
+					//insert pop up hover effect
+					marker.on('mouseover', function (e) {
+
+							this.openPopup();
+
+					});
+
+					marker.on('mouseout', function (e) {
+
+							this.closePopup();
+
+					});
+
+				});
+
+
+
+		      }, "json");
+
+			}
+
+
+
+			this.error = function() { //error method : creates a marker with HTML error message if no busses incoming at the stop
+
+				console.log("in error");
+
+		      	var marker = this.marker3();
+
+		      	marker.bindPopup("<b>ERROR: no bus expected at this stop</b>");
+
+		      	marker.on('mouseover', function (e) {
+
+		            this.openPopup();
+
+		        });
+
+		        marker.on('mouseout', function (e) {
+
+		            this.closePopup();
+
+		        });
+
+			}
+
+
+
+		};
+
+
+
+		//Create a Mapbox Map Instance on the site with feature layer of locations
+
+		L.mapbox.accessToken = 'pk.eyJ1IjoiamRnYXJyYWgiLCJhIjoiY2owaDVwcnNtMDB2djJ3dWpob2pyZnA3ZyJ9.NV2uh3r2yqnmyIfxfDXZJw';
+
+		var map = L.mapbox.map('map', 'mapbox.streets').setView([42.353151, -71.077895],15);
+
+		var locations = L.mapbox.featureLayer().addTo(map);
+
+
+
+		//response function 
+
+		function response(resp) {
+
+			console.log("running");
+
+			console.log(resp);
+
+			// create closest bus stop 
+
+			for (var i=0; i<1; i++) {
+
+				//establish object
+
+				var info = resp.rows[i];
+
+				var stop = new busStop(info);
+
+				console.log("nearest stop latitude: ", stop.lat);
+
+				console.log("nearest stop lng: ", stop.lng);
+
+				console.log("nearest stop id: ", stop.id);
+
+				//store variables for end point
+				end = L.latLng(stop.lat, stop.lng)
+				console.log("sophie end" + end)
+
+				//first method: marker
+
+				stop.marker();
+
+				//second method: getWalkTime
+
+				//stop.getWalkTime(usr[1],usr[0]);
+
+				//third: getNextBus
+
+				stop.getNextBus(usr[1],usr[0]);
+
+				// draw path from user location to nearest bus stop 
+				var directions = L.mapbox.directions({
+			    	profile: 'mapbox.walking', 
+			    	unit: 'metric' 
+			    });
+
+
+				directions.setOrigin(start); 
+				directions.setDestination(end);   
+				directions.query(); 
+				
+				var directionsLayer = L.mapbox.directions.layer(directions).addTo(map); 
+				var directionsRoutesControl = L.mapbox.directions.routesControl('routes', directions)
+				    .addTo(map); //adds directions line to the map
+				var directionsInstructionsControl = L.mapbox.directions.instructionsControl('instructions', directions)
+   				.addTo(map); //writes instructions to the document space dedicated to it
+
+ 
+   							
+				
+				}; 				
+
+			//create other three bus stops 
+
+			for (var i=1; i<resp.rows.length; i++) {
+
+				//establish object
+
+				var info = resp.rows[i];
+
+				var stop = new busStop(info);
+
+				console.log("nearest stop latitude: ", stop.lat);
+
+				console.log("nearest stop lng: ", stop.lng);
+
+				console.log("nearest stop id: ", stop.id);
+
+
+
+				//first method: marker
+
+				stop.marker2();
+
+				//second method: getWalkTime
+
+				//stop.getWalkTime(usr[1],usr[0]);
+
+				//third: getNextBus
+
+				stop.getNextBus(usr[1],usr[0]);
+
+			}
+
+
+
+		}
+
+
+
+		//get data from the fusion table
+
+		function queryData(lat, lng) {
+
+			//our url parameters
+
+			var queryHead = "https://www.googleapis.com/fusiontables/v2/query?sql=";
+
+			var queryTail = "&key=AIzaSyBfiusxHnKEjM_qqD7kPcWi77pzWYy9dKk";
+
+			var tableId = "1qcDOoHfI2-YuUrDEuVSIVifiAlHX3ORrjiUx3jdN";
+
+			//our query for data
+
+			var query = "SELECT stop_id, stop_name, stop_lat, stop_lon FROM " + tableId + " ORDER BY ST_DISTANCE(stop_lat, LATLNG("+ lat + ", " + lng + ")) LIMIT 4"; 
+
+			//encode for HTTP request
+
+			var queryUrl = encodeURI(queryHead + query + queryTail);
+
+
+
+			//JQuery
+
+			var req = $.get(queryUrl, response, "jsonp");
+
+		}
+
+
+
+		///////MAIN//////////////
+
+		// create a marker where the user is 
+		
+
+		map.on('click',function(e){ //click event listener
+
+			 	var usrLat = e.latlng.lat; //Stores clicked Latitude under variable: latitude
+
+			 	var usrLng = e.latlng.lng; //Stores clicked Latitude under variable: longitude
+
+			 	var here = L.marker([usrLat, usrLng], {
+
+			 		icon: L.mapbox.marker.icon({
+
+						'marker-size': 'small',
+
+						})
+
+			 	}).addTo(map); 
+
+			 	var here = L.marker([usrLat, usrLng],{
+
+			 		icon: L.mapbox.marker.icon({
+
+						'marker-size': 'small'
+
+						}),
+
+				   	}).addTo(map);; 
+
+			 	// informatrion popup opens on hover and clsoes afterwards 
+
+			 	here.bindPopup("Your location");
+
+        		here.on('mouseover', function (e) {
+
+		            this.openPopup();
+
+		        });
+
+		        here.on('mouseout', function (e) {
+
+		            this.closePopup();
+
+		        });
+
+				
+
+				start = L.latLng(usrLat, usrLng);
+				console.log("sophie" + start);
+				map.panTo(start); //pans and centers at users location to show close stops and walking directions
+				 
+
+			 	usr = [usrLat, usrLng]; //stores usr lat lng ina  global variable
+
+			 	queryData(usrLat, usrLng) //calls fcn to query the fusion table and begins the domino effect of various functions and methods
+
+			 });
+//end pgm
+	</script>
+
+</body>
+
+</html>
+
+<!-- end site -->

@@ -1,0 +1,56 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Canadian Water Pollution, 2015</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/bubble_chart.css">
+  <link rel="stylesheet" href="https://www.w3schools.com/lib/w3.css">
+
+  <style>
+  .text {
+    position: relative;
+    right:0
+    top: 0;
+    font-family: georgia;
+  }
+
+  nav {
+    background-image: url("https://www.nrdc.org/sites/default/files/styles/header_background/public/watpra_rm_sc004131_2400x900_1_0.jpg?itok=KCYOJrgW");
+  }
+  </style>
+
+</head>
+<body>
+  <div class="container">
+    <nav>
+      <ul class="w3-navbar w3-black">
+    <li><a>Home</a></li>
+    <li><a href="http://neogeoweb.ca/384group1/SPACESHIPEARTH_map.html">Cop Watch</a></li>
+    <li><a href="http://neogeoweb.ca/384group1/group1_busTracker.html">Transit Updates</a></li>
+    <li><a href="http://neogeoweb.ca/384group1/contact.html">Contact</a></li>
+  </ul>
+    <h1 style="color:white;"> SPACESHIP EARTH DAILY </h1>
+    <h2 style="color:white;">Water Pollution Events recorded by Environment Canada, 2015</h2>
+    <div id="toolbar">
+      <a href="#" id="all" class="button active">All Pollution</a>
+      <a href="#" id="year" class="button">By Region</a>
+    </div>
+  </nav>
+
+    <div class="text"> 
+      <p> Despite the frequency of toxic industrial spills and leaks around the world, only a few ever permeate the public consciousness. One can recall major disasters such as the BP Deepwater Horizon Spill in 2010, which released 4.9 billion gallons of oil into the Gulf of Mexico, and is considered the largest marine oil spill in the history of the petroleum industry (The Telegraph, 2010) Due to the explosion of a deepwater rig, 11 people were killed, the spill continued for months due to an inability to halt the flow from the source, and millions of local flora and fauna perished. But for each headline-grabbing disaster of historic proportions, there are many more smaller but significant incidents which go unnoticed by the general public. Even when people are aware of these large scale incidents, it can be difficult to connect an industrial disaster in a far away part of the world to one’s everyday life and the quality of one’s immediate environment. Moreover, oil is but one of many pollutants which routinely make their way into land and water sources due to accidental and sometimes intentional dumping by a variety of industries. The difficulty of creating a systematic record of the details of various spills is exacerbated by the fact that that the information is self-reported by the company involved. This can cause unreliable information and at worst, outright covering up of the extent of damage. During the Deepwater Horizon Spill, for example, scientist found that the initial leak gushed at 62,000 barrels a day, more than twelve times what BP has originally reported.  
+     </p>
+      </div>
+    <div id="vis"></div>
+    <div class="text" style="float:right">
+      <p>This issue is of special concern to Canada, which relies on oil has fueled the booming economy of provinces like Alberta and whose pristine landscapes are a major incentive for tourists. But corporations are not the only contributors to large-scale pollution events. In October of 2015, the City of Montreal dumped close to 5 billion tonnes of untreated sewage into the St. Lawrence river. This raised concerns about introducing high levels of harmful bacteria into the water body, as well as the highly unpleasant smell and poor aesthetics associated with the process. But Quebec is far from the only province which sanctions large scale dumping of hazardous materials in water bodies. As citizens demand open data about these incidents, it is more likely that awareness of the frequency and nature of polluting events will increase. Holding public institutions as well as corporations accountable for their actions is the responsibility of local residents. With 5 separate incidents of between 5,000 and 15,000 gallons of contaminants released by municipal agencies of four different provinces, it is evident that this is an issue that affects citizens from coast to coast.</p>
+    </div>
+
+  <script src="//d3js.org/d3.v4.min.js"></script>
+  <script src="src/tooltip.js"></script>
+  <script src="src/bubble_chart3.js"></script>
+
+</body>
+</html>
